@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CompilerLab — Interactive Compiler Analysis & Optimization Workbench</title>
+    <meta name="description" content="A visual educational compiler laboratory for CSA1405 demonstrating Lexer, Parser, AST, Symbol Table, Static Type Checking, TAC IR, Optimization, and Target Machine Code Generation." />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              mono: ['Fira Code', 'monospace'],
+            }
+          }
+        }
+      }
+    </script>
+    <link rel="stylesheet" href="/src/styles/index.css" />
+  </head>
+  <body class="bg-[#090d16] text-slate-100 antialiased overflow-hidden">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
