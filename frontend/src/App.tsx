@@ -50,7 +50,7 @@ export const App: React.FC = () => {
     {
       id: "functions.spl",
       name: "functions.spl",
-      content: `// SimpleLang Demo: Typed Functions & Scopes
+      content: `// SimpleLang Demo: Typed Functions & Activation Records
 function add(a : int, b : int) : int {
     let sum : int = a + b;
     return sum;
@@ -76,6 +76,10 @@ print(truncated);
   ]);
   const [activeFileId, setActiveFileId] = useState<string>("main.spl");
 
+  // Split Panel Width (Percentage 30% to 70%)
+  const [leftPanelWidth, setLeftPanelWidth] = useState<number>(45);
+  const [isResizing, setIsResizing] = useState(false);
+
   // Compilation State
   const [status, setStatus] = useState<"ready" | "compiling" | "success" | "error">("ready");
   const [compilationResult, setCompilationResult] = useState<CompilationResult | null>(null);
@@ -89,7 +93,6 @@ print(truncated);
 
   const currentFile = files.find((f) => f.id === activeFileId) || files[0];
 
-  // Fetch examples on mount
   useEffect(() => {
     compilerApi.getExamples().then((exList) => {
       setExamples(exList);
@@ -98,6 +101,27 @@ print(truncated);
     // Initial compile
     handleCompile(currentFile.content);
   }, []);
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!isResizing) return;
+    const newWidth = (e.clientX / window.innerWidth) * 100;
+    if (newWidth >= 25 && newWidth <= 75) {
+      setLeftPanelWidth(newWidth);
+    }
+  };
+
+  const handleMouseUp = () => setIsResizing(false);
+
+  useEffect(() => {
+    if (isResizing) {
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+    }
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isResizing]);
 
   const handleCodeChange = (newCode: string) => {
     setFiles((prev) =>
@@ -112,7 +136,6 @@ print(truncated);
       setCompilationResult(result);
       setStatus(result.success ? "success" : "error");
 
-      // Auto-open diagnostics if there are errors
       if (!result.success && result.diagnostics.length > 0) {
         setIsDiagnosticsOpen(true);
       }
@@ -134,7 +157,6 @@ print(truncated);
   };
 
   const handleBreakIt = () => {
-    // Introduce a realistic error mutation into the code
     const code = currentFile.content;
     let mutatedCode = code;
 
@@ -177,8 +199,8 @@ print(truncated);
   const totalTime = compilationResult?.timings?.reduce((acc, t) => acc + t.duration_ms, 0) || 0;
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#090d16] text-slate-100 font-sans">
-      {/* Top Main Navigation Header */}
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#05070e] text-slate-100 font-sans">
+      {/* Top Application Header */}
       <Header
         status={status}
         onCompile={() => handleCompile()}
@@ -197,10 +219,10 @@ print(truncated);
         }}
       />
 
-      {/* Main Content Area */}
+      {/* Main Studio View */}
       {activeView === "studio" && (
         <div className="flex flex-col flex-1 overflow-hidden">
-          {/* Hero Pipeline Navigation Bar */}
+          {/* Interactive Pipeline Progress Track */}
           <PipelineBar
             timings={compilationResult?.timings || []}
             activeStageTab={activeStageTab}
@@ -209,10 +231,13 @@ print(truncated);
             totalTimeMs={totalTime}
           />
 
-          {/* Workspace Split Panels */}
-          <div className="flex flex-1 overflow-hidden">
-            {/* Left Panel: File Manager + Code Editor */}
-            <div className="w-1/2 flex flex-col border-r border-[#1e293b]">
+          {/* Split Resizable Workspace */}
+          <div className="flex flex-1 overflow-hidden relative">
+            {/* Left Panel: File Manager & Code Editor */}
+            <div
+              style={{ width: `${leftPanelWidth}%` }}
+              className="flex flex-col border-r border-[#1e293b]/80 h-full overflow-hidden"
+            >
               <FileManager
                 files={files}
                 activeFileId={activeFileId}
@@ -231,9 +256,18 @@ print(truncated);
               </div>
             </div>
 
-            {/* Right Panel: Compiler Stage Inspector */}
-            <div className="w-1/2 flex flex-col bg-[#0b0f19] overflow-hidden">
-              {/* Active Stage Panel Render */}
+            {/* Draggable Divider */}
+            <div
+              onMouseDown={() => setIsResizing(true)}
+              className="w-1 bg-[#1e293b] hover:bg-cyan-500 cursor-col-resize transition-colors z-20 shrink-0"
+              title="Drag to resize panels"
+            />
+
+            {/* Right Panel: Active Stage Inspector */}
+            <div
+              style={{ width: `${100 - leftPanelWidth}%` }}
+              className="flex flex-col bg-[#080d1a] h-full overflow-hidden"
+            >
               <div className="flex-1 overflow-hidden">
                 {activeStageTab === "lexer" && (
                   <LexerTab
@@ -311,7 +345,7 @@ print(truncated);
         </div>
       )}
 
-      {/* Alternative View Modes */}
+      {/* Standalone Educational Modes */}
       {activeView === "dashboard" && (
         <DashboardTab
           lastResult={compilationResult || undefined}
