@@ -1,5 +1,5 @@
-import React, { useRef, useEffect } from "react";
-import { Copy, Trash2, Check, AlertCircle } from "lucide-react";
+import React, { useRef, useState } from "react";
+import { Copy, Trash2, Check, AlertCircle, Play, Sparkles, Terminal } from "lucide-react";
 import { Diagnostic } from "../../types/compiler";
 
 interface CodeEditorProps {
@@ -17,7 +17,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   onCompile,
   activeLine,
 }) => {
-  const [copied, setCopied] = React.useState(false);
+  const [copied, setCopied] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const lines = code.split("\n");
@@ -29,14 +29,12 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   );
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Ctrl + Enter to Compile
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
       e.preventDefault();
       onCompile();
       return;
     }
 
-    // Handle Tab key
     if (e.key === "Tab") {
       e.preventDefault();
       const textarea = textareaRef.current;
@@ -59,44 +57,55 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   };
 
   const handleClear = () => {
-    if (confirm("Clear the editor?")) {
+    if (confirm("Clear code editor?")) {
       onChange("");
     }
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#0b0f19] border-r border-[#1e293b] select-none">
-      {/* Editor Top Toolbar */}
-      <div className="flex items-center justify-between px-3 py-1.5 bg-[#090d16] border-b border-[#1e293b] text-xs text-slate-400">
+    <div className="flex flex-col h-full bg-[#080d1a] border-r border-[#1e293b]/70 select-none">
+      {/* Editor Sub-Header Toolbar */}
+      <div className="flex items-center justify-between px-3.5 py-2 bg-[#0a1122] border-b border-[#1e293b] text-xs">
         <div className="flex items-center space-x-2">
-          <span className="font-mono text-sky-400 font-semibold">SimpleLang (.spl)</span>
-          <span className="text-[10px] text-slate-500">
+          <div className="flex items-center space-x-1.5 bg-sky-500/10 border border-sky-500/30 px-2 py-0.5 rounded text-[11px] font-mono text-sky-300 font-semibold">
+            <Terminal className="w-3 h-3" />
+            <span>SimpleLang Editor</span>
+          </div>
+          <span className="text-[11px] text-slate-500 font-mono">
             {lines.length} lines • {code.length} chars
           </span>
         </div>
 
         <div className="flex items-center space-x-1">
           <button
+            onClick={onCompile}
+            title="Compile code (Ctrl+Enter)"
+            className="flex items-center space-x-1 px-2.5 py-1 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 text-white rounded text-xs font-semibold shadow-sm transition-all active:scale-95 cursor-pointer mr-1"
+          >
+            <Play className="w-3 h-3 fill-current" />
+            <span>Run</span>
+          </button>
+          <button
             onClick={handleCopy}
-            title="Copy source code"
-            className="p-1 hover:text-white rounded hover:bg-slate-800 transition-colors"
+            title="Copy code"
+            className="p-1.5 hover:text-white text-slate-400 rounded hover:bg-slate-800 transition-colors"
           >
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
           </button>
           <button
             onClick={handleClear}
-            title="Clear editor"
-            className="p-1 hover:text-rose-400 rounded hover:bg-slate-800 transition-colors"
+            title="Clear code"
+            className="p-1.5 hover:text-rose-400 text-slate-400 rounded hover:bg-slate-800 transition-colors"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
 
-      {/* Editor Core */}
+      {/* Editor Main Surface */}
       <div className="flex-1 flex overflow-hidden relative">
-        {/* Line Numbers & Error Gutter */}
-        <div className="w-12 bg-[#090d16] py-3 text-right text-slate-600 font-mono text-xs select-none border-r border-[#1e293b]/60 flex flex-col">
+        {/* Line Gutter */}
+        <div className="w-12 bg-[#060a14] py-3 text-right text-slate-600 font-mono text-xs select-none border-r border-[#1e293b]/50 flex flex-col">
           {lines.map((_, idx) => {
             const lineNum = idx + 1;
             const hasError = errorLines.has(lineNum);
@@ -108,11 +117,11 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 key={idx}
                 className={`h-6 px-1.5 flex items-center justify-end space-x-1 leading-6 ${
                   hasError
-                    ? "bg-rose-950/40 text-rose-400 font-bold"
+                    ? "bg-rose-950/60 text-rose-400 font-bold border-l-2 border-rose-500"
                     : hasWarning
-                    ? "bg-amber-950/40 text-amber-400"
+                    ? "bg-amber-950/50 text-amber-400 font-bold border-l-2 border-amber-500"
                     : isActive
-                    ? "bg-sky-950/40 text-sky-300 font-bold"
+                    ? "bg-sky-950/50 text-sky-300 font-bold border-l-2 border-sky-400"
                     : "text-slate-600"
                 }`}
               >
@@ -123,8 +132,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
           })}
         </div>
 
-        {/* Textarea Code Input */}
-        <div className="flex-1 relative overflow-auto">
+        {/* Text Area Code Editor */}
+        <div className="flex-1 relative overflow-auto bg-[#080d1a]">
           <textarea
             ref={textareaRef}
             value={code}
@@ -143,21 +152,26 @@ print(x);
         </div>
       </div>
 
-      {/* Editor Status Bar */}
-      <div className="px-3 py-1 bg-[#090d16] border-t border-[#1e293b] text-[11px] text-slate-500 flex items-center justify-between">
+      {/* Bottom Status Strip */}
+      <div className="px-3.5 py-1.5 bg-[#060a14] border-t border-[#1e293b] text-[11px] text-slate-400 flex items-center justify-between font-mono">
         <div className="flex items-center space-x-3">
-          <span>UTF-8</span>
-          <span>SimpleLang CFG</span>
+          <span>SimpleLang (.spl)</span>
+          <span>•</span>
           <span>Tab: 4 spaces</span>
+          <span>•</span>
+          <span>Press Ctrl+Enter to compile</span>
         </div>
         <div className="flex items-center space-x-2">
           {diagnostics.some((d) => d.severity === "error") ? (
-            <span className="text-rose-400 font-semibold flex items-center space-x-1">
+            <span className="text-rose-400 font-bold flex items-center space-x-1">
               <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-ping mr-1" />
-              Syntax/Type Diagnostics Present
+              Errors Detected
             </span>
           ) : (
-            <span className="text-emerald-400">Ready</span>
+            <span className="text-emerald-400 font-semibold flex items-center space-x-1">
+              <Check className="w-3 h-3" />
+              <span>Ready</span>
+            </span>
           )}
         </div>
       </div>

@@ -1,5 +1,5 @@
 import React from "react";
-import { CheckCircle2, XCircle, Clock, ChevronRight } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, ChevronRight, Activity } from "lucide-react";
 import { StageTimingModel } from "../../types/compiler";
 
 interface PipelineBarProps {
@@ -13,19 +13,21 @@ interface PipelineBarProps {
 interface StageDefinition {
   id: string;
   name: string;
+  shortName: string;
   unit: string;
   description: string;
 }
 
 const STAGES: StageDefinition[] = [
-  { id: "lexer", name: "1. Lexer", unit: "Unit I", description: "Tokenization & Lexeme Recognition" },
-  { id: "parser", name: "2. Parser", unit: "Unit II", description: "Recursive Descent & CFG Validation" },
-  { id: "ast", name: "3. AST", unit: "Unit II/III", description: "Abstract Syntax Tree Construction" },
-  { id: "symbols", name: "4. Symbol Table", unit: "Unit III", description: "Scoped Identifiers & Declarations" },
-  { id: "semantic", name: "5. Semantic / Types", unit: "Unit III", description: "Static Type Checking & Diagnostics" },
-  { id: "ir", name: "6. Intermediate Code", unit: "Unit IV", description: "TAC, Quadruples, Triples & Backpatching" },
-  { id: "optimizer", name: "7. Optimizer & CFG", unit: "Unit V", description: "Basic Blocks & Constant Folding" },
-  { id: "codegen", name: "8. Target VM", unit: "Unit V", description: "Assembly Instructions & Activation Records" },
+  { id: "lexer", name: "1. Lexer", shortName: "Lexer", unit: "Unit I", description: "Tokenization & Lexeme Recognition" },
+  { id: "parser", name: "2. Parser", shortName: "Parser", unit: "Unit II", description: "Recursive Descent & CFG Validation" },
+  { id: "ast", name: "3. AST", shortName: "AST", unit: "Unit II", description: "Abstract Syntax Tree Hierarchy" },
+  { id: "symbols", name: "4. Symbols", shortName: "Symbols", unit: "Unit III", description: "Scoped Identifiers & Scopes" },
+  { id: "semantic", name: "5. Semantic", shortName: "Semantic", unit: "Unit III", description: "Static Type Checking & Rules" },
+  { id: "ir", name: "6. IR (TAC)", shortName: "IR", unit: "Unit IV", description: "TAC, Quadruples & Triples" },
+  { id: "optimizer", name: "7. Optimizer", shortName: "Optimizer", unit: "Unit V", description: "Constant Folding & Simplification" },
+  { id: "flowgraph", name: "8. CFG Blocks", shortName: "CFG", unit: "Unit V", description: "Basic Blocks & Flow Graph" },
+  { id: "codegen", name: "9. Target VM", shortName: "Codegen", unit: "Unit V", description: "Assembly & Runtime Stack" },
 ];
 
 export const PipelineBar: React.FC<PipelineBarProps> = ({
@@ -44,6 +46,7 @@ export const PipelineBar: React.FC<PipelineBarProps> = ({
       semantic: "Semantic Analysis",
       ir: "IR Generation",
       optimizer: "Optimization",
+      flowgraph: "Optimization",
       codegen: "Code Generation",
     };
     const targetName = map[stageId] || "";
@@ -51,35 +54,22 @@ export const PipelineBar: React.FC<PipelineBarProps> = ({
   };
 
   return (
-    <div className="bg-[#090d16] border-b border-[#1e293b] px-4 py-2 overflow-x-auto select-none">
+    <div className="bg-[#070b14] border-b border-[#1e293b] px-3 py-2 overflow-x-auto select-none">
       <div className="flex items-center justify-between min-w-max space-x-2">
-        <div className="flex items-center space-x-1">
+        <div className="flex items-center space-x-1.5">
           {STAGES.map((stage, idx) => {
             const timing = getStageTiming(stage.id);
             const isSelected = activeStageTab === stage.id;
-            const isError = timing?.status === "error" || (failedStage && failedStage.toLowerCase().includes(stage.id));
+            const isError = timing?.status === "error" || (failedStage && failedStage.toLowerCase().includes(stage.shortName.toLowerCase()));
             const isSuccess = timing?.status === "success";
 
-            let borderClass = "border-[#1e293b]";
-            let bgClass = "bg-[#0f172a]";
-            let textClass = "text-slate-400";
-            let pillClass = "text-slate-500";
-
+            let pillStyle = "bg-[#0b101d] border-slate-800 text-slate-400 hover:border-slate-600";
             if (isSelected) {
-              borderClass = "border-sky-500 shadow-md shadow-sky-500/10";
-              bgClass = "bg-sky-950/40 text-sky-200";
-              textClass = "text-sky-300 font-semibold";
-              pillClass = "text-sky-400";
+              pillStyle = "bg-sky-950/70 border-sky-400 text-sky-200 font-bold shadow-md shadow-sky-500/20";
             } else if (isError) {
-              borderClass = "border-rose-500/50";
-              bgClass = "bg-rose-950/30";
-              textClass = "text-rose-300";
-              pillClass = "text-rose-400";
+              pillStyle = "bg-rose-950/50 border-rose-500 text-rose-200 font-semibold";
             } else if (isSuccess) {
-              borderClass = "border-emerald-500/30";
-              bgClass = "bg-emerald-950/20";
-              textClass = "text-emerald-300";
-              pillClass = "text-emerald-400";
+              pillStyle = "bg-emerald-950/20 border-emerald-500/40 text-emerald-300";
             }
 
             return (
@@ -87,9 +77,8 @@ export const PipelineBar: React.FC<PipelineBarProps> = ({
                 <button
                   onClick={() => onSelectStageTab(stage.id)}
                   title={stage.description}
-                  className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg border ${borderClass} ${bgClass} transition-all hover:border-slate-500 active:scale-95 text-left cursor-pointer group`}
+                  className={`flex items-center space-x-2 px-2.5 py-1.5 rounded-lg border text-xs transition-all cursor-pointer ${pillStyle}`}
                 >
-                  {/* Status Indicator */}
                   {isError ? (
                     <XCircle className="w-3.5 h-3.5 text-rose-400 shrink-0 animate-pulse" />
                   ) : isSuccess ? (
@@ -98,15 +87,12 @@ export const PipelineBar: React.FC<PipelineBarProps> = ({
                     <div className="w-2 h-2 rounded-full bg-slate-600 shrink-0" />
                   )}
 
-                  <div>
-                    <div className="flex items-center space-x-1.5">
-                      <span className={`text-xs font-medium ${textClass}`}>{stage.name}</span>
-                      <span className={`text-[9px] uppercase px-1 py-0.2 bg-slate-800/80 rounded ${pillClass}`}>
-                        {stage.unit}
-                      </span>
+                  <div className="text-left">
+                    <div className="flex items-center space-x-1">
+                      <span className="font-semibold">{stage.name}</span>
                     </div>
                     {timing && (
-                      <div className="text-[10px] text-slate-500 flex items-center space-x-0.5 mt-0.5">
+                      <div className="text-[10px] text-slate-400 flex items-center space-x-0.5 font-mono">
                         <Clock className="w-2.5 h-2.5" />
                         <span>{timing.duration_ms} ms</span>
                       </div>
@@ -115,30 +101,24 @@ export const PipelineBar: React.FC<PipelineBarProps> = ({
                 </button>
 
                 {idx < STAGES.length - 1 && (
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                  <ChevronRight className="w-3 h-3 text-slate-700 shrink-0" />
                 )}
               </React.Fragment>
             );
           })}
         </div>
 
-        {/* Total Time & Report Quick Link */}
-        {totalTimeMs > 0 && (
-          <div className="hidden xl:flex items-center space-x-2 pl-4 border-l border-slate-800 text-xs text-slate-400">
-            <span className="text-[11px] text-slate-500">Pipeline Total:</span>
-            <span className="font-mono text-emerald-400 font-semibold">{totalTimeMs.toFixed(2)} ms</span>
-            <button
-              onClick={() => onSelectStageTab("report")}
-              className={`px-2 py-1 text-[11px] rounded border transition-all ${
-                activeStageTab === "report"
-                  ? "bg-sky-500 text-white border-sky-400"
-                  : "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700"
-              }`}
-            >
-              Full Report
-            </button>
-          </div>
-        )}
+        {/* Master Report Button */}
+        <button
+          onClick={() => onSelectStageTab("report")}
+          className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
+            activeStageTab === "report"
+              ? "bg-sky-500 text-white border-sky-400 shadow-md shadow-sky-500/30"
+              : "bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-700"
+          }`}
+        >
+          Full Report {totalTimeMs > 0 ? `(${totalTimeMs.toFixed(1)}ms)` : ""}
+        </button>
       </div>
     </div>
   );
